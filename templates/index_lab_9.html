@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Notes</title>
+    <style>
+        body {
+            background-color: #ffffff;
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+        }
+        header {
+            background-color: #bbd1e6;
+            color: #ffffff;
+            padding: 0.5rem;
+            font-size: 1.5rem;
+            text-align: center;
+            font-family: 'Sou', sans-serif;
+        }
+        .notes-container {
+            margin: 1rem;
+            padding: 1rem;
+            border-radius: 4px;
+            background-color: #fbbaab;
+            font-family: 'Roboto', sans-serif;
+        }
+        .note {
+            margin: 0.5rem 0;
+            padding: 0.5rem;
+            border-radius: 4px;
+            background-color: #f7eae4;
+            display: flex;
+            align-items: center;
+        }
+        .note-text {
+            flex-grow: 1;
+            font-size: 1rem;
+            color: #333333;
+            font-family: 'Roboto', sans-serif;
+        }
+        .note-form {
+            margin: 1rem;
+            padding: 1rem;
+            border-radius: 4px;
+            background-color: #d4e4f3;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-family: 'Roboto', sans-serif;
+        }
+        .note-form h2 {
+            color: #7c8c9c;
+        }
+        .note-form input {
+            width: 80%;
+            margin-bottom: 0.5rem;
+            padding: 0.5rem;
+            font-size: 1rem;
+            border: 1px solid #bbd1e6;
+            border-radius: 4px;
+            background-color: #ffffff;
+            font-family: 'Roboto', sans-serif;
+        }
+        .note-form .form-actions {
+            display: flex;
+            justify-content: space-between;
+            width: 85%;
+        }
+        .note-form .form-actions label {
+            display: flex;
+            align-items: center;
+        }
+        .note-form .form-actions button {
+            background-color: #fbbaab;
+            color: #ffffff;
+            border: none;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            font-size: 1rem;
+            border-radius: 4px;
+        }
+        .clear-notes-btn {
+            display: block;
+            margin: 1rem auto;
+            background-color: #fbbaab;
+            color: #ffffff;
+            border: none;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            font-size: 1rem;
+            border-radius: 4px;
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <h1>My Notes</h1>
+    </header>
+    <div class="notes-container" id="notes-container">
+
+    </div>
+    <button class="clear-notes-btn" onclick="clearNotes()">Clear Notes</button>
+    <div class="note-form">
+        <h2>Add a New Note</h2>
+        <input type="text" id="note-text" placeholder="Enter note text">
+        <div class="form-actions">
+            <label>
+                <input type="checkbox" id="note-important"> Mark as Important
+            </label>
+            <div>
+                <button onclick="addNote()">Save Note</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        window.onload = function() {
+            fetchNotes();
+        };
+    
+        function fetchNotes() {
+            fetch('/notes')
+                .then(response => response.json())
+                .then(data => {
+                    const notesContainer = document.getElementById('notes-container');
+                    notesContainer.innerHTML = '';
+                    data.forEach(note => {
+                        const newNote = document.createElement('div');
+                        newNote.className = `note ${note.important ? 'important' : ''}`;
+                        newNote.innerHTML = `
+                            <div class="note-text">${note.important ? '<strong>' : ''}${note.text}${note.important ? '</strong>' : ''}</div>
+                        `;
+                        notesContainer.appendChild(newNote);
+                    });
+                });
+        }
+    
+        function addNote() {
+            const noteText = document.getElementById('note-text').value;
+            const isImportant = document.getElementById('note-important').checked;
+    
+            if (noteText.trim() === '') {
+                alert('Please enter note text!');
+                return;
+            }
+    
+            fetch('/add', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ text: noteText, important: isImportant })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                document.getElementById('note-text').value = '';
+                document.getElementById('note-important').checked = false;
+                fetchNotes();
+            })
+            .catch(error => {
+                console.error('There was a problem with the fetch operation:', error);
+                alert('Failed to save the note. Please try again.');
+            });
+        }
+    
+        function clearNotes() {
+            fetch('/clear', {
+                method: 'POST'
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                document.getElementById('notes-container').innerHTML = '';
+                alert(data.message);
+            })
+            .catch(error => {
+                console.error('There was a problem with the fetch operation:', error);
+                alert('Failed to clear notes. Please try again.');
+            });
+        }
+    </script>
+    
+</body>
+</html>
